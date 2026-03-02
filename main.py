@@ -9,6 +9,7 @@ import mediapipe as mp
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
 from volumenbrightness import VolumeGesture, VolumeController
+from face_recog import FaceRecognizer
 
 
 class HandTracker:
@@ -263,9 +264,53 @@ class GestureVirtualMouse:
         print("Shutting down...")
 
 
+class AttendancePhase:
+
+    def __init__(self):
+        self.recognizer = FaceRecognizer()
+
+    def run(self):
+        """
+        Opens webcam, runs face recognition continuously.
+        Press 'q' to close the attendance window and move to gesture mouse.
+        """
+        cap = cv2.VideoCapture(0)
+
+        try:
+            while cap.isOpened():
+                success, img = cap.read()
+                if not success:
+                    break
+
+                img = cv2.flip(img, 1)
+                img, names = self.recognizer.recognize(img)
+
+                # Show status overlay
+                cv2.putText(img, f"Marked: {len(self.recognizer.marked_today)}/{len(self.recognizer.known_names)}",
+                            (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+                cv2.putText(img, "Press 'q' to continue to Gesture Mouse",
+                            (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 255), 2)
+
+                cv2.imshow("Attendance - Face Recognition", img)
+
+                if cv2.waitKey(1) & 0xFF == ord('q'):
+                    print("Moving to gesture mouse...")
+                    break
+        finally:
+            cap.release()
+            cv2.destroyAllWindows()
+
+
 if __name__ == "__main__":
     script_dir = os.path.dirname(os.path.abspath(__file__))
     model_path = os.path.join(script_dir, 'hand_landmarker.task')
-    print("Starting Gesture Virtual Mouse...")
+
+    # Phase 1: Face Recognition Attendance
+    print("=== Phase 1: Face Recognition Attendance ===")
+    attendance = AttendancePhase()
+    attendance.run()
+
+    # Phase 2: Gesture Virtual Mouse
+    print("\n=== Phase 2: Gesture Virtual Mouse ===")
     app = GestureVirtualMouse(model_path)
     app.run()

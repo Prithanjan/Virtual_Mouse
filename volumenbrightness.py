@@ -4,9 +4,10 @@ import numpy as np
 import math
 
 try:
-    from pycaw.pycaw import AudioUtilities, ISimpleAudioVolume
+    from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
     from comtypes import CLSCTX_ALL
     from ctypes import cast, POINTER
+
     PYCAW_AVAILABLE = True
 except ImportError:
     PYCAW_AVAILABLE = False
@@ -18,11 +19,14 @@ class VolumeController:
     def __init__(self):
         self.current_volume = 50
         self.volume = None
+
         if PYCAW_AVAILABLE:
             try:
                 devices = AudioUtilities.GetSpeakers()
-                interface = devices.Activate(ISimpleAudioVolume._iid_, CLSCTX_ALL, None)
-                self.volume = cast(interface, POINTER(ISimpleAudioVolume))
+                interface = devices.Activate(
+                    IAudioEndpointVolume._iid_, CLSCTX_ALL, None
+                )
+                self.volume = cast(interface, POINTER(IAudioEndpointVolume))
             except Exception as e:
                 print(f"Error initializing volume control: {e}")
                 self.volume = None
@@ -34,8 +38,8 @@ class VolumeController:
         if self.volume and PYCAW_AVAILABLE:
             try:
                 normalized_volume = level / 100.0
-                self.volume.SetMasterVolume(normalized_volume, None)
-            except Exception as e:
+                self.volume.SetMasterVolumeLevelScalar(normalized_volume, None)
+            except Exception:
                 pass
     
     def get_volume(self):

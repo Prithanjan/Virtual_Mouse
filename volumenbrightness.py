@@ -23,7 +23,7 @@ class VolumeController:
         if PYCAW_AVAILABLE:
             try:
                 devices = AudioUtilities.GetSpeakers()
-                interface = devices.Activate(
+                interface = devices._dev.Activate(    #added ._dev 
                     IAudioEndpointVolume._iid_, CLSCTX_ALL, None
                 )
                 self.volume = cast(interface, POINTER(IAudioEndpointVolume))
